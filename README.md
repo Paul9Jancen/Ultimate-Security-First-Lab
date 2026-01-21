@@ -1,236 +1,127 @@
-Ultimate AWS Security-First Lab
-Zero-Trust Cloud Architecture (Free Tier, Console-Only)
-Project Overview
+Serverless To-Do REST API (AWS)
 
-This project demonstrates a production-grade, zero-trust AWS security architecture built entirely within the AWS Free Tier and configured 100% through the AWS Management Console (browser-only).
+A fully serverless To-Do REST API built on AWS using API Gateway, Lambda, and DynamoDB.
+Designed for secure, scalable CRUD operations with browser access enabled and built entirely through the AWS Console.
 
-The lab focuses on identity-first security, least-privilege access, private networking, full auditability, and real-time security alerting, aligned with real-world cloud security and cloud architect best practices.
+Architecture
+API Gateway (HTTP API)
+        |
+        v
+AWS Lambda (TodoHandler)
+        |
+        v
+DynamoDB Table (Todos)
 
-Goal: Demonstrate hands-on AWS security engineering skills, not theory.
+Features
 
-Core Objectives
+Full CRUD operations:
 
-Implement Zero-Trust Architecture
+Create, Read (single and list), Update, Delete
 
-Enforce Least-Privilege IAM access
+Serverless architecture (no servers to manage)
 
-Eliminate public exposure (no SSH, no public IPs)
+Secure IAM permissions (least privilege)
 
-Enable full audit logging and compliance monitoring
+CORS enabled for browser-based frontends
 
-Detect and alert on unauthorized API activity
+Free Tier safe
 
-Remain fully within AWS Free Tier with zero billing risk
+Implemented entirely in AWS Console (no CLI or Terraform)
 
-Architecture Summary
+Technologies Used
+Service	Purpose
+API Gateway (HTTP API)	Exposes REST endpoints
+AWS Lambda (Python 3.11)	Serverless backend logic
+DynamoDB	NoSQL database storage
+IAM	Secure permissions
+CloudWatch	Monitoring & logs
+DynamoDB Table
 
-Security Model: Defense-in-Depth + Zero Trust
-Access Model: Identity-based (IAM roles only)
-Network Model: Private subnets, no internet exposure
-Monitoring Model: Continuous logging with event-driven alerts
+Table Name: Todos
+Partition Key: id (String)
+Billing Mode: On-demand (PAY_PER_REQUEST)
 
-AWS Services Used
+API Endpoints
+Method	Endpoint	Purpose
+GET	/todos	List all todos
+POST	/todos	Create a new todo
+GET	/todos/{id}	Get a single todo
+PUT	/todos/{id}	Update a todo
+DELETE	/todos/{id}	Delete a todo
 
-AWS IAM (Users, Roles, Policies)
+Base URL:
+https://r9309x2rdl.execute-api.us-east-1.amazonaws.com
 
-Amazon EC2 (private, Session Manager access only)
+Lambda Environment Variables
+Key	Value
+TABLE_NAME	Todos
+IAM Permissions
 
-Amazon RDS (PostgreSQL with IAM authentication)
+The Lambda role is restricted to only required DynamoDB actions:
 
-Amazon S3 (encrypted, versioned storage)
+dynamodb:GetItem
 
-AWS CloudTrail (multi-region audit logs)
+dynamodb:PutItem
 
-AWS Config (continuous compliance monitoring)
+dynamodb:UpdateItem
 
-Amazon EventBridge (security event routing)
+dynamodb:DeleteItem
 
-Amazon SNS (real-time alerting)
+dynamodb:Scan
 
-Security Controls Implemented
-1. Root Account Hardening
+How to Test (curl)
+Create Todo
+curl -X POST https://r9309x2rdl.execute-api.us-east-1.amazonaws.com/todos \
+  -H "Content-Type: application/json" \
+  -d '{"task": "Finish AWS project"}'
 
-Multi-factor authentication enabled on root account
+List Todos
+curl https://r9309x2rdl.execute-api.us-east-1.amazonaws.com/todos
 
-Root user restricted to emergency use only
+Get Todo
+curl https://r9309x2rdl.execute-api.us-east-1.amazonaws.com/todos/<id>
 
-No root access for daily operations
+Update Todo
+curl -X PUT https://r9309x2rdl.execute-api.us-east-1.amazonaws.com/todos/<id> \
+  -H "Content-Type: application/json" \
+  -d '{"task": "Updated task"}'
 
-2. Identity and Access Management
-IAM Users (Least Privilege)
-User	Purpose
-EC2-Admin	EC2 administration only
-RDS-Admin	RDS management
-S3-Admin	S3 administration
-Security-Auditor	Read-only security audits
+Delete Todo
+curl -X DELETE https://r9309x2rdl.execute-api.us-east-1.amazonaws.com/todos/<id>
 
-No access keys created
+Browser Testing (JavaScript)
+<script>
+async function createTodo() {
+    const response = await fetch('https://r9309x2rdl.execute-api.us-east-1.amazonaws.com/todos', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({task: 'My first todo'})
+    });
+    const data = await response.json();
+    console.log(data);
+}
 
-Console-only access
+async function listTodos() {
+    const response = await fetch('https://r9309x2rdl.execute-api.us-east-1.amazonaws.com/todos');
+    const data = await response.json();
+    console.log(data);
+}
 
-Permissions scoped per service
+createTodo();
+listTodos();
+</script>
 
-IAM Roles (Zero Trust)
-Role	Trusted Service	Purpose
-EC2-Role	EC2	Secure access to S3 and RDS
-RDS-Role	Lambda	IAM database authentication
-S3-Role	EC2	Restricted S3 bucket access
+Cost Control and Safety
 
-Temporary credentials only
+DynamoDB uses On-demand billing (no capacity planning)
 
-No hardcoded secrets
+Lambda is only charged when invoked
 
-Service-to-service authentication enforced
+API Gateway is charged per request
 
-3. Secure Data Storage (Amazon S3)
+If unused, cost is near zero
 
-Bucket: lab-secure-bucket-657429748140
+Can be deleted anytime to prevent any cost
+Final Notes
 
-Public access fully blocked
-
-AES-256 encryption at rest
-
-Versioning enabled
-
-ACLs disabled (bucket owner enforced)
-
-4. Zero-Trust Compute (Amazon EC2)
-
-Instance type: t3.micro (Free Tier)
-
-Private subnet only
-
-No public IPv4 address
-
-No SSH keys or key pairs
-
-Access via AWS Systems Manager Session Manager
-
-IAM role attached (EC2-Role)
-
-5. Secure Database (Amazon RDS)
-
-PostgreSQL engine
-
-Instance type: db.t2.micro
-
-Private subnet deployment
-
-Public access disabled
-
-IAM database authentication enabled
-
-Security group restricted to EC2 role only
-
-6. Audit Logging (AWS CloudTrail)
-
-Multi-region trail enabled
-
-Logs all management API calls
-
-Log file integrity validation enabled
-
-Dedicated S3 bucket for logs
-
-7. Continuous Compliance (AWS Config)
-
-Records all supported resource types
-
-Continuous configuration recording
-
-Tracks configuration drift and changes in real time
-
-8. Security Event Detection and Alerting
-EventBridge
-
-Rule: UnauthorizedAPICallRule
-
-Source: CloudTrail API events
-
-Condition: Unauthorized API calls
-
-State: Enabled
-
-SNS
-
-Topic: LabAlerts
-
-Used for real-time security notifications
-
-GuardDuty and Security Hub Status
-
-Not enabled due to Free Tier account limitations
-
-Detection coverage replaced by:
-
-CloudTrail
-
-EventBridge
-
-SNS-based alerting
-
-Validation and Testing
-
-Unauthorized IAM actions trigger EventBridge events
-
-All API activity logged in CloudTrail
-
-Configuration changes detected by AWS Config
-
-EC2 access verified using Session Manager only
-
-Public access attempts blocked at multiple layers
-
-Zero-Trust Principles Applied
-
-No implicit trust based on network location
-
-Identity verification for all access
-
-Least-privilege permissions everywhere
-
-Continuous monitoring and alerting
-
-Assume breach model enforced
-
-Documentation Strategy
-
-The project is documented using high-impact verification screenshots only:
-
-Root MFA status
-
-IAM users and roles
-
-IAM role trust relationships
-
-Secure S3 bucket configuration
-
-Private EC2 instance settings
-
-RDS private access configuration
-
-CloudTrail logging status
-
-AWS Config recording status
-
-EventBridge rule and SNS topic
-
-No unnecessary screenshots included.
-
-Final Result
-
-This lab represents a realistic, enterprise-grade AWS security environment suitable for:
-
-Cloud Security Engineer portfolios
-
-Cloud Architect roles
-
-SOC and Blue Team fundamentals
-
-Compliance-focused cloud environments
-
-Built with zero cost, zero shortcuts, and production-level security discipline.
-
-Project Title
-
-Ultimate AWS Security-First Lab: Zero-Trust Cloud Architecture
+This project demonstrates a complete serverless backend built entirely in the AWS Console, with full CRUD, security, and browser compatibility. It is Free Tier safe and ready for frontend integration.
